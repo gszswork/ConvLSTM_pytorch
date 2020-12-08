@@ -30,7 +30,9 @@ class ConvLSTMCell(nn.Module):
         self.bias = bias
 
         self.conv = nn.Conv2d(in_channels=self.input_dim + self.hidden_dim,
-                              out_channels=4 * self.hidden_dim,
+                              out_channels=4 * self.hidden_dim,     # 直接把out_channels 设置为4倍hidden?
+                                                                    # ———>因为后面把out split为i, f, o, g四个部分。
+                                                                    # 这不是传统LSTM的操作，应该是variants？
                               kernel_size=self.kernel_size,
                               padding=self.padding,
                               bias=self.bias)
@@ -180,12 +182,28 @@ class ConvLSTM(nn.Module):
 
     @staticmethod
     def _check_kernel_size_consistency(kernel_size):
+        # kernel_size 必须是tuple或者tuples list。
         if not (isinstance(kernel_size, tuple) or
                 (isinstance(kernel_size, list) and all([isinstance(elem, tuple) for elem in kernel_size]))):
             raise ValueError('`kernel_size` must be tuple or list of tuples')
 
     @staticmethod
     def _extend_for_multilayer(param, num_layers):
+        # 如果param参数（特指hidden_dim和kernel_size)只有一个（不为list）,那就把它复制为和layers长度一致的list。
         if not isinstance(param, list):
             param = [param] * num_layers
         return param
+
+if __name__ == "__main__":
+    x = torch.rand((32, 10, 64, 128, 128))
+    convlstm = ConvLSTM(64, [16,32,64], [(3,3),(5,5),(3,3)], 3, True, True, False)
+    """
+    hints：
+    1. 创建convLSTM时，hidden_dim 和 kernel_size 为element或者长度与layers相同的list。
+    2. 最终输出的长度与最后一个hidden_dim相关。 
+    """
+    _, last_states = convlstm(x)
+    h = last_states[0][0]  # 0 for layer index, 0 for h index
+    for list in last_states:
+        for elem in list:
+            print(elem.shape)
