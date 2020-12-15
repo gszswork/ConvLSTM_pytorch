@@ -135,13 +135,13 @@ class ConvLSTM(nn.Module):
         """
         if not self.batch_first:
             # (t, b, c, h, w) -> (b, t, c, h, w)
-            input_tensor = input_tensor.permute(1, 0, 2, 3, 4)
+            input_tensor = input_tensor.permute(1, 0, 2, 3, 4)      # permute is a good function XD
 
         b, _, _, h, w = input_tensor.size()
 
         # Implement stateful ConvLSTM
         if hidden_state is not None:
-            raise NotImplementedError()
+            print("loaded hidden state")
         else:
             # Since the init is done in forward. Can send image size here
             hidden_state = self._init_hidden(batch_size=b,
@@ -195,15 +195,12 @@ class ConvLSTM(nn.Module):
         return param
 
 if __name__ == "__main__":
-    x = torch.rand((32, 10, 64, 128, 128))
-    convlstm = ConvLSTM(64, [16,32,64], [(3,3),(5,5),(3,3)], 3, True, True, False)
+    x = torch.rand((1, 10, 64, 128, 128))
+    convlstm = ConvLSTM(64, [16,32,64], [(3,3),(5,5),(3,3)], 3, True, True, True)
     """
     hints：
     1. 创建convLSTM时，hidden_dim 和 kernel_size 为element或者长度与layers相同的list。
     2. 最终输出的长度与最后一个hidden_dim相关。 
     """
-    _, last_states = convlstm(x)
-    h = last_states[0][0]  # 0 for layer index, 0 for h index
-    for list in last_states:
-        for elem in list:
-            print(elem.shape)
+    _, state1 = convlstm(x)
+    _, state2 = convlstm(x, state1)
